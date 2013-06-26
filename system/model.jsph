@@ -1,0 +1,303 @@
+// 	MODEL
+//	------------------------------------------------------
+//	Function	:	Common model class featuring methods used for getting, updating and setting database tables.
+//				
+//
+
+Phrame.model = (function () {
+					
+					// Properties
+					// -----------------------------------------------------------------------------
+					
+					// Dump object containing all the database tables
+					var databaseDump = new Array();
+					
+					// Create databaseRecord class 
+					var DatabaseRecord	=	function (databaseObject)
+											{
+												this.dbRecords		=	[];
+												this.dbName			=	databaseObject['dbName'];
+												this.dbPath			=	databaseObject['dbPath'];
+												
+												//	Automatically populate database records												
+												this.setRecords(databaseObject);
+											}
+											
+
+					//	Set databaseRecord prototype
+					DatabaseRecord.prototype.setRecords		=	function(databaseObject)
+																{
+																	//	Check if null because JSON parse will automatically parse non existent numeric keys as null.
+																	for (var key in databaseObject['dbContent'])
+																	{
+																		if (databaseObject['dbContent'][key] !== null)
+																		{
+																			this.dbRecords[key]	=	databaseObject['dbContent'][key];
+																		}
+																	}
+																}
+					//	Get databaseRecord prototype											
+					DatabaseRecord.prototype.getRecord		=	function(databaseKeys)
+																{
+																	var dbKeysType	=	Object.prototype.toString.call( databaseKeys )
+																	
+																	switch (dbKeysType)
+																	{
+																		case '[object String]':
+																		case '[object Number]':
+																			return this.dbRecords[databaseKeys];
+																			break;
+																		case '[object global]':
+																			return this.dbRecords;
+																			break;
+																		case '[object Array]':
+																			var	arrayDump		=	[]
+																			for (var i = 0; i < databaseKeys.length; i++)
+																			{
+																				if (this.dbRecords[databaseKeys[i]] !== 'undefined') 
+																				{
+																					arrayDump.push(this.dbRecords[databaseKeys[i]]);
+																				}
+																			}
+																			return arrayDump
+																			break;
+																		default:
+																			alert('The ' + dbKeysType + ' ' + databaseKeys + ' is not a valid index type.');
+																	}
+																}
+					//	Insert Database record prototype						
+					DatabaseRecord.prototype.insertRecord	=	function(object, index)
+																{
+																	var indexType	=	Object.prototype.toString.call( index );
+																	var doInsert	=	false;
+																	
+																	switch (indexType)
+																	{	
+																		
+																		case '[object String]':
+																		case '[object Number]':
+																			var objectType	=	Object.prototype.toString.call( this.dbRecords[index] );
+																			if(objectType === '[object global]')
+																			{
+																				this.dbRecords[index]	=	object;
+																				var doInsert	=	true;
+																			}
+																			else
+																			{
+																				alert('There is already a record at the index ' + index + '\n\r Please use another index key.')
+																			}
+																			break;
+																		case '[object global]':
+																			this.dbRecords.push(object);
+																			var doInsert	=	true;
+																			break;
+																		default:
+																			alert('The ' + indexType + ' ' + index + ' is not a valid index type.');
+																	}
+																	
+																	if(doInsert)
+																	{
+																		Phrame.model.writeDatabaseFile(this.dbPath, this.dbRecords)
+																		return this.dbRecords.length
+																	};
+																	
+																	return doInsert;
+																}	
+																
+					DatabaseRecord.prototype.deleteRecord	=	function(index)
+																{
+																	var indexType	=	Object.prototype.toString.call( index );
+																	var deleteRecord = new Array();
+																	
+																	if (indexType === '[object String]' || indexType === '[object Number]')
+																	{	
+																	
+																		var validIndex	=	Object.prototype.toString.call( this.dbRecords[index] );
+																		
+																		if (validIndex	!==	'[object global]')
+																		{
+																			deletedRecord	=	deleteRecord.concat([this.dbRecords[index]]);
+																			delete this.dbRecords[index];
+																			Phrame.model.writeDatabaseFile(this.dbPath, this.dbRecords);
+																			return deletedRecord[0];
+																		}
+																		else
+																		{
+																			alert('The index ' + index + ' can\'t be deleted because there is no such index in the database.')
+																		}
+																	}
+																	else
+																	{
+																		alert('The ' + indexType + ' ' + index + ' is not a valid index type.');
+																	}
+																	
+																	return false;
+																}	
+					// TODO!!!											
+					DatabaseRecord.prototype.updateRecord	=	function(index, objectsToBeUpdated)
+																{
+																	var recordType	=	Object.prototype.toString.call( this.dbRecords[index] )
+																	var doUpdate	=	false;
+																
+																	if (recordType !== '[object global]')
+																	{
+																		var objType	=	Object.prototype.toString.call( objectsToBeUpdated )
+																		
+																		if (objType === '[object Array]' || objType === '[object Object]')
+																		{
+																			for (var key in objectsToBeUpdated)
+																			{
+																				this.dbRecords[index][key]	=	objectsToBeUpdated[key]
+																			}
+																			
+																			doUpdate = true;
+																		} 
+																		else 
+																		{
+																			this.dbRecords[index]	=	objectsToBeUpdated;
+																			doUpdate = true;
+																		}
+																	}	
+																	else
+																	{
+																		alert('The record index ' + index + ' does not exist in this database.');
+																	}
+																	
+																	if(doUpdate)
+																	{
+																		Phrame.model.writeDatabaseFile(this.dbPath, this.dbRecords)
+																		return true
+																	};
+																	
+																	return doUpdate;																	
+																}				
+					
+					
+					
+					// Constructor
+					// -----------------------------------------------------------------------------
+
+					// Methods
+					// -----------------------------------------------------------------------------
+					return {
+					
+						'loadDatabase'	:	function()
+											{
+												if (DB_LOAD)
+												{																							
+													var databaseDump	=	new Object();
+													
+													// Initialize database
+													Phrame.database = new Object();
+													
+													// Load all database files (in database folder)
+													databaseDump = Phrame.model.getDatabaseRecords(FOLDER_DB, DB_SUF, DB_EXT);
+													
+													// Add tables to the database object
+													// Tablenames are based on filename.
+													for (var key in databaseDump)
+													{
+														var dbName	=	databaseDump[key]['dbName'];
+														
+														Phrame.database[dbName] = new DatabaseRecord(databaseDump[key]);
+														
+													}
+												}
+											}
+						
+					, 'getDatabaseRecords'		:	function(folder, suffix, extension) {
+	
+														var dump		=	databaseDump;	
+														var directory 	= 	new Folder(folder);																							
+														var files 		= 	directory.getFiles();
+														
+														// Check if it's a folder or a file
+														// If it's a folder a recursive method is used to find the nested folders or files
+														for (var key in files) 
+														{	
+															var file = String(files[key]);
+															
+															//	Process file name for validation
+															var fileNameArray	=	file.split('.');	// Split on . to get extension
+															var fileNameExt		=	'.' + fileNameArray[(fileNameArray.length-1)];
+															
+															// Check if filename contains DB extensions
+															if (fileNameExt === DB_EXT)
+															{
+																var dbNameArray		=	fileNameArray[(fileNameArray.length-2)].split('_');	//	Split on _ to get suffix
+																var dbPathNameArray	=	dbNameArray[(dbNameArray.length-2)].split('/');	// Split on / to get the last part of the file name path
+																var dbName			=	dbPathNameArray[dbPathNameArray.length-1];	//	Get last key value, which should be the database table name
+																
+																// Check if file contains suffix
+																// Not 100% proof yet (with suffix, ...)
+																if (('_' + dbNameArray[1]) === DB_SUF)
+																{
+																	
+																	// Initialize new folder object so content can be read
+																	fileObject = new File(files[key]);
+																	
+																	// Open file, read JSON string.
+																	fileObject.open('r');
+																	var JSONstring = fileObject.read();
+																	fileObject.close();
+																	
+																	// Smart way to evaluate a string as JSON even though eval isn't the best option.
+																	// Credits: http://stackoverflow.com/questions/4935632/how-to-parse-json-in-javascript
+																	if (typeof dump[dbName] === 'undefined')
+																	{
+																		//	Add array to dump containing database name, database path and database content 
+																		dump.push({ "dbName":dbName, "dbPath": files[key], "dbContent":JSON.parse(JSONstring)});
+																	}
+																	else
+																	{
+																		alert('Seems like there is already a database file with the name \n\r\n\r' + files[key] + '\n\r\n\r This database file will not be loaded. Please rename this file.')
+																	}
+																	
+																	//TODO: maybe implement error handling for when file can't be loaded due to ie. corrupt JSON file? (4/04/2013);
+																}
+															}
+															else	// 	If filename doesn't contain the DB_EXT, it might be a folder and this method needs to be called recursively.
+															{
+															
+																Phrame.model.getDatabaseRecords(files[key], DB_SUF, DB_EXT);
+															}
+															
+														}
+														
+														return dump;
+													}
+					
+					, 'writeDatabaseFile'			:	function(path, object)	// Remark: Administrator rights are needed in order to write a file.
+														{
+															
+															//Phrame.library.dump(object);
+															// Convert object to JSON string
+															var JSONstring = JSON.stringify(object);
+															
+															// Initialise file
+															f = new File(path);
+
+															// Open file, write JSON string, close file.
+															var open = f.open('w');
+															f.write(JSONstring);
+															f.close();
+														}	
+														
+					, 'createDatabase'				:	function(path, object)	// Remark: Administrator rights are needed in order to write a file.
+														{
+															
+															//Phrame.library.dump(object);
+															// Convert object to JSON string
+															var JSONstring = JSON.stringify(object);
+															
+															// Initialise file
+															f = new File(path);
+
+															// Open file, write JSON string, close file.
+															var open = f.open('w');
+															f.write(JSONstring);
+															f.close();
+														}
+					}
+				
+				}());

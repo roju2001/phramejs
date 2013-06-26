@@ -1,0 +1,149 @@
+// 	LIBRARY
+//	------------------------------------------------------
+//	Function	:	All helper methods not specific for the application
+//				
+//
+
+Phrame.library 	= 	(function () {
+						
+						return 	{
+									// PROMPT HELPERS
+									// --------------
+									// Get selected value from radiobutton group
+									'getRadiobuttonValue'	:	function (rbuttonsArray)
+																{
+																	for (var key in rbuttonsArray.children) {
+																		if (rbuttonsArray.children[key].value == true)
+																		{
+																			return rbuttons.children[key].text;
+																		}
+																	}
+																}
+																
+									// SPECIFIC ADOBE PROGRAM FUNCTION HELPERS
+									// Shorthand character ID to Type ID;
+									, 'cTID'				:	function (character) 
+																{
+																	var id		=	app.charIDToTypeID(character); 
+																	return id;
+																}
+		
+									// Shorthand string ID to Type ID;		
+									, 'sTID'				:	function (string) 
+																{ 
+																	var id	=app.stringIDToTypeID(string);
+																	return id; 
+																}
+									
+									
+									// JAVASCRIPT HELPERS
+									// ------------------
+									// Convert object to JSON format 
+									// This is NOT a good method, but can't get external JSON.stringify function to work.
+									, 'stringify'			:	function (object)
+																{
+																	
+																	if(typeof object == "object")
+																	{
+																		var objectSize 	= 	Phrame.library.getObjectSize(object);
+																		var counter		=	0;
+																		var dump 		= 	"{\n\r";
+																		
+																		for (key in object)
+																		{
+																			dump += "	\"" + key + "\"";
+																			dump += "			:	";
+																			
+																			if (typeof object[key] == "object")
+																			{
+																				dump += Phrame.library.stringify(object[key]);
+																			}
+																			
+																			else if (typeof object[key] == "boolean" || typeof object[key] == "number")
+																			{
+																				dump += object[key] + "";
+																			} 
+																			
+																			else 
+																			{
+																				dump += '"' + object[key] + '"';
+																			}
+																			
+																			// Add trailing comma if it isn't the last object.
+																			dump += ((counter < (objectSize-1))?",\n":"\n");
+																			counter += 1;
+																		}
+																		
+																		dump += "}\n\r";
+																		
+																		return dump;
+																	}
+																}
+									
+									// Returns the data and time in mm/dd/yyyy hh:mm:ss format
+									, 'getCurrentTime'		:	function () 
+																{
+		
+																	var currentDate 	= 	new Date();
+																	
+																	var day 			= 	currentDate.getDate();
+																	var month 			= 	currentDate.getMonth() + 1;
+																	var year 			= 	currentDate.getFullYear();
+																	var hour			=	currentDate.getHours();
+																	var minute			=	currentDate.getMinutes();
+																	var second 			=	currentDate.getSeconds();
+																	
+																	return (month + "/" + day + "/" + year + " " + hour + ":" + minute + ":" + second);
+																}
+									
+									// Returns the size of an object
+									, 'getObjectSize'		:	function (object)
+																{
+																	// Since size is 0 based, counter needs to start at -1
+																	var counter = 0
+																	
+																	for (key in object)
+																	{
+																		counter++;
+																	}
+																	
+																	return counter;
+																}
+									
+									// Clone object
+									// http://stackoverflow.com/questions/3774008/cloning-a-javascript-object
+									, 'cloneObject'			:	function(){ 
+																  return function (obj) { Clone.prototype=obj; return new Clone() };
+																  function Clone(){}
+																}()
+									
+									
+									// DEBUGGGING HELPERS
+									// Dump method that outputs object in readable format.
+									, 'dump'				:	function (obj) {
+		
+																	var out = '';
+																	
+																	for (var i in obj) {
+																		out += i + ": " + obj[i] + "\n";
+																	}
+
+																	alert(out);
+																}
+									
+									
+									// MATH HELPERS
+									// ------------
+									// Calculate radius
+									// Calculate radius using Pythagoras (a² + b² = c²)							
+									, 'getRadius'			:	function (a, b) {
+				
+																	var aSquared = a * a;
+																	var bSquared = b * b;
+
+																	var c = Math.sqrt(aSquared + bSquared);
+
+																	return c;
+																}
+								}
+					}());

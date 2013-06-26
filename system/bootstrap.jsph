@@ -1,0 +1,203 @@
+// 	BOOTSTRAP
+//	------------------------------------------------------
+//	Function	:	Loads all the system, application and database files		
+//				
+//
+
+
+// CREATE PHRAME OBJECT.
+var Phrame = new Object();
+
+
+// CREATE BOOTSTRAP
+Phrame.bootstrap	=	(function(){
+	
+							// 	Properties
+							// 	-----------------------------------------------------------------------------
+							//	Used for storting all the constructors that need to be executed after every file is loaded.
+							var constructorDump		=	{
+															'model'			:	[],
+															'view'			:	[],
+															'controller'	:	[]
+														};
+							
+							
+							// 	Methods
+							// 	-----------------------------------------------------------------------------
+							// 	Function to process constants so they are easier to read and use
+							function processConstants() {
+								FOLDER_AP	=	APP_PATH + FOLDER_AP + '/';
+								FOLDER_SY	=	APP_PATH + FOLDER_SY + '/';
+								FOLDER_DB	=	APP_PATH + FOLDER_DB + '/';
+								FOLDER_AS	=	APP_PATH + FOLDER_AS + '/';
+							}
+							
+							// 	Load all files in the requested folder (standard: Phrame.js) that have the application extension (standard: .jsph)
+							function loadSystem(folder) 
+							{
+								// 	Dump containing all the scripts
+								var scriptDump	=	'';
+								
+								// Load file function that can be called recursively
+								var loadSysFiles	=	(function()
+													{
+														return function(folder) {
+															
+																					var directory = new Folder(folder);
+										
+																					var files = directory.getFiles();
+																					
+																					// Check if it's a folder or a file
+																					// If it's a folder a recursive method is used to find the nested folders or files
+																					for (var key in files) 
+																					{	
+																						var file = String(files[key]);
+																						
+																						// Load all .jsph files & avoid bootstrap from being loaded again.
+																						if (file.match(APP_EXT) && !file.match('bootstrap' + APP_EXT))
+																						{																									
+																							scriptDump 	+=	returnFileContent(file);
+																						}
+																						else
+																						{
+																							// If file is a folder, call method recursively.
+																							loadSysFiles(file);
+																						}
+																					}
+																				}
+																
+													}());
+								
+								// Execute the loadFiles method				
+								loadSysFiles(folder);
+							
+								// Evaluate the script dump
+								eval(scriptDump);
+							}
+							
+							// Evaluate all the files and clear the scriptDump variable
+							function loadApplication(folder)
+							{
+								// Dump containing all the scripts
+								var scriptDump	=	'';
+								
+								// Load file function that can be called recursively
+								var loadAppFiles	=	(function()
+														{
+															return function(folder) {
+																
+																						var directory = new Folder(folder);
+											
+																						var files = directory.getFiles();
+																						
+																						// Check if it's a folder or a file
+																						// If it's a folder a recursive method is used to find the nested folders or files
+																						for (var key in files) 
+																						{	
+																							var file = String(files[key]);
+																																															
+																							// Chech if the file contains the .jsph extension, if not it is a folder and this method needs to be called recursively
+																							if (file.match(APP_EXT) )
+																							{
+																								if ( file.match('_model') || file.match('_view') || file.match('_controller') )
+																								{
+																									// Split path based on delimiter.
+																									var fileArray	=	file.split('/');
+																									
+																									// Extract file name (last key) and replace the .jsph extension
+																									var fileName	=	fileArray[(fileArray.length - 1)].replace(APP_EXT, '');
+																									
+																									// Split based on the _ in the file name. 
+																									// This produces an array with the first key being the method name and the second part the part of the MVC object to which the method needs to be appended.
+																									var methodNameArray	=	fileName.split('_');
+																									
+																									var objectName		=	methodNameArray[1];
+																									var methodName		=	methodNameArray[0];
+																									
+																									// Get the content of the current file
+																									var applicationFile	=	returnFileContent(file);
+																									
+																									if (typeof Phrame[objectName][methodName] === 'undefined')
+																									{
+																										// Append the method to the right object (model, view or controller)
+																										Phrame[objectName][methodName] = eval(applicationFile);
+																									}
+																									else
+																									{
+																										alert('Hmm. Seems like there is already a file somewhere in the application\\' + objectName + ' folder with the same file name as\n\r\n\r\t' + fileName +APP_EXT + '\n\r\n\r You might want to change it to something more unique. I like unique.');
+																									}
+																									
+																									// Add constructor of current object to constructor dump for later execution
+																									constructorDump[objectName].push(methodName);
+																								}
+																								else
+																								{
+																									scriptDump 	+=	returnFileContent(file);
+																								}
+																							}
+																							else
+																							{
+																								// If file is a folder, call method recursively.
+																								loadAppFiles(file);
+																							}
+																							
+																						}
+																							
+																	}
+														}());
+								
+								// Execute the loadFiles method				
+								loadAppFiles(folder);
+								
+								// Evaluate the script dump	
+								eval(scriptDump);
+							}
+							
+							function executeConstructors(objectName)
+							{
+								for (var i = 0; i < constructorDump[objectName].length; i++)
+								{
+									var methodName	=	constructorDump[objectName][i];
+									// Execute constructor
+									Phrame[objectName][methodName].constructor();
+								}
+							}
+							
+							function returnFileContent(file)
+							{
+								fileObject = new File(file);
+																																
+								// Open file, read JS and add as string.
+								fileObject.open('r');
+								var testDump	= 	fileObject.read();
+								fileObject.close();
+								
+								return testDump;
+							}
+
+							return {
+									'run'	:	function()
+												{
+													// Process constants for easier use
+													processConstants();
+													
+													// Load all the files that are in the system folder. Needs to be loaded first.
+													loadSystem(FOLDER_SY);
+													
+													// Load database
+													Phrame.model.loadDatabase();
+													
+													// Load all the files that are in the application folder
+													loadApplication(FOLDER_AP);
+
+													// Execute constructors of application
+													executeConstructors('model');
+													executeConstructors('view');
+													executeConstructors('controller');
+												}
+								}
+							
+						}())
+
+// EXECUTE BOOTSTRAP
+Phrame.bootstrap.run();						

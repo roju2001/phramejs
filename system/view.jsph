@@ -1,0 +1,18 @@
+// 	VIEW
+//	------------------------------------------------------
+//	Function	:	Loads all the methods that are required for the view. The view can be either dialogue related or photoshop view (drawing shapes, adding layers, ...) related
+//				
+//
+
+Phrame.view		=	(function() {
+
+							// Properties
+							// -----------------------------------------------------------------------------
+
+							// Methods
+							// -----------------------------------------------------------------------------
+							
+							return {
+										
+									}
+						}());
